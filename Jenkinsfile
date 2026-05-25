@@ -1,67 +1,51 @@
- {
- agent any
- environment {
- DOCKER_HUB_ORGANIZATION = 'Mayank-200618'
- CONTAINER_IMAGE_NAME = 'titanic-mlops-project'
- CREDENTIALS_MAP_ID = 'docker-hub-vault-key'
- }
- stages {
- stage('Sourcing Code Infrastructure') {
- steps {
- echo ' Syncing workspace directory matching remote tracking branch
-lines...'
- }
- }
- stage('Pre-Flight Runtime Test') {
- steps {
- echo ' Verifying underlying system software version requirements...'
- sh 'python3 --version'
- sh 'docker --version'
- }
- }
- stage('Compiling Docker Container Layer') {
- steps {
- echo ' Triggering local structural Docker image build sequence...'
- sh "docker build -t ${DOCKER_HUB_ORGANIZATION}/$
-{CONTAINER_IMAGE_NAME}:latest ."
- }
- }
- stage('Integration & Health Checks') {
- steps {
- echo ' Spin-up test container instance to verify endpoint stability...'
- sh "docker run -d -p 5000:5000 --name pipeline_verification_instance $
-{DOCKER_HUB_ORGANIZATION}/${CONTAINER_IMAGE_NAME}:latest"
- sh "sleep 5"
- sh "curl -f http://localhost:5000/health"
- echo ' Microservice functional verification test successfully passed.'
- }
- post {
- always {
- echo ' Tearing down background integration testing containers...'
- sh "docker rm -f pipeline_verification_instance || true"
- }
- }
- }
- stage('Publishing to Docker Hub Registry') {
- steps {
- echo ' Accessing credential stores and syncing images upstream...'
- withCredentials([usernamePassword(credentialsId: "${CREDENTIALS_MAP_ID}",
-passwordVariable: 'HUB_PASSWORD', usernameVariable: 'HUB_USERNAME')]) {
- sh "echo ${HUB_PASSWORD} | docker login -u ${HUB_USERNAME} --passwordstdin"
- sh "docker push ${DOCKER_HUB_ORGANIZATION}/$
-{CONTAINER_IMAGE_NAME}:latest"
- }
- echo ' Production image payload successfully broadcasted to central
-registries.'
- }
- }
- }
- post {
- always {
- echo ' De-authorizing system registry access tokens and cleaning workspace
-allocations...'
- sh 'docker logout || true'
- cleanWs()
- }
- }
+pipeline {
+    agent any
+    environment {
+        DOCKER_HUB_ORGANIZATION = 'mayankmewara2006'
+        CONTAINER_IMAGE_NAME    = 'titanic-mlops-project'
+        CREDENTIALS_MAP_ID      = 'docker-hub-vault-key'
+    }
+    stages {
+        stage('Sourcing Code') {
+            steps {
+                echo 'Syncing workspace...'
+            }
+        }
+        stage('Pre-Flight Test') {
+            steps {
+                bat 'python --version'
+                bat 'docker --version'
+            }
+        }
+        stage('Docker Build') {
+            steps {
+                bat "docker build -t %DOCKER_HUB_ORGANIZATION%/%CONTAINER_IMAGE_NAME%:latest ."
+            }
+        }
+        stage('Health Check') {
+            steps {
+                bat "docker run -d -p 5000:5000 --name pipeline_test %DOCKER_HUB_ORGANIZATION%/%CONTAINER_IMAGE_NAME%:latest"
+                bat 'ping -n 8 127.0.0.1 > nul'
+                bat 'curl -f http://localhost:5000/health'
+            }
+            post {
+                always {
+                    bat 'docker rm -f pipeline_test || exit /b 0'
+                }
+            }
+        }
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-vault-key', passwordVariable: 'HUB_PASSWORD', usernameVariable: 'HUB_USERNAME')]) {
+                    bat 'echo %HUB_PASSWORD% | docker login -u %HUB_USERNAME% --password-stdin'
+                    bat "docker push %DOCKER_HUB_ORGANIZATION%/%CONTAINER_IMAGE_NAME%:latest"
+                }
+            }
+        }
+    }
+    post {
+        always {
+            bat 'docker logout || exit /b 0'
+        }
+    }
 }
