@@ -1,8 +1,8 @@
  {
  agent any
  environment {
- DOCKER_HUB_ORGANIZATION = 'your_dockerhub_username'
- CONTAINER_IMAGE_NAME = 'titanic-mlops-service'
+ DOCKER_HUB_ORGANIZATION = 'Mayank-200618'
+ CONTAINER_IMAGE_NAME = 'titanic-mlops-project'
  CREDENTIALS_MAP_ID = 'docker-hub-vault-key'
  }
  stages {
