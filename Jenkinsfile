@@ -3,7 +3,6 @@ pipeline {
     environment {
         DOCKER_HUB_ORGANIZATION = 'mayankmewara2006'
         CONTAINER_IMAGE_NAME    = 'titanic-mlops-project'
-        CREDENTIALS_MAP_ID      = 'docker-hub-vault-key'
     }
     stages {
         stage('Sourcing Code') {
@@ -13,7 +12,6 @@ pipeline {
         }
         stage('Pre-Flight Test') {
             steps {
-                bat 'python --version'
                 bat 'docker --version'
             }
         }
